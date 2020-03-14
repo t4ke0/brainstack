@@ -7,8 +7,9 @@
 
 ## Usage 
 
-``
+```
   $ go run brainstack.go -f <CSV FILE HERE> -i <ideas HERE> -add <true if you wanna add these ideas>
   $ go run brainstack.go -done 
-``
+
+```
 
