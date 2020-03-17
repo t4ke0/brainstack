@@ -17,10 +17,10 @@
 
 
 ```
-  When Adding New ideas or taughts to the program you each row in the csv file should have the same length ,
+  When Adding New ideas or thaughts to the program you each row in the csv file should have the same length ,
   because when you use csv you should respect the number of fields of each line
 
-  $ ./brainstack -f <csv filename> -i <ideas or taugths here should be separated by comma> -add 
+  $ ./brainstack -f <csv filename> -i <ideas or thaugths here should be separated by comma> -add 
   so number of the ideas separated by comma should be the same in the next addition of the ideas if you wont put the same number of ideas , you can use comma as an additional element per example : 
   $ ./brainstack -f file.csv -i "idea1,idea2,idea3" -add 
   $ ./brainstack -f file.csv -i "idea4,idea5,." -add 
