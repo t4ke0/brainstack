@@ -1,9 +1,10 @@
 package main
 
 import (
-	"./flaghandler"
 	"flag"
 	"fmt"
+
+	"github.com/TaKeO90/brainstack/flaghandler"
 )
 
 func main() {

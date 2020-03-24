@@ -1,9 +1,10 @@
 package flaghandler
 
 import (
-	"../csvhandler"
 	"fmt"
 	"strings"
+
+	"github.com/TaKeO90/brainstack/csvhandler"
 )
 
 func HandleAddingIdeas(ideas string, file string) string {

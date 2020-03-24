@@ -9,27 +9,28 @@ import (
 	"strings"
 )
 
-//Func For Checking Errors
+//CheckError Checks For Errors then it logs them
 func CheckError(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-//Creating a file
+//CreateFile creates New csv file or open an existing one
 func CreateFile(file string) *os.File {
 	f, err := os.OpenFile(file, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 	CheckError(err)
 	return f
 }
 
+//RemoveFile removes an existing csv file
 func RemoveFile(file string) bool {
 	err := os.Remove(file)
 	CheckError(err)
 	return true
 }
 
-//Read content from a csv file
+//ReadCsv reads content from a csv file
 func ReadCsv(filename string) [][]string {
 	f, err := os.Open(filename)
 	CheckError(err)
@@ -40,7 +41,7 @@ func ReadCsv(filename string) [][]string {
 	return rec
 }
 
-//Write content on the csv file
+//WriteCsv write content on the csv file
 func WriteCsv(filename string, content []string) {
 	f := CreateFile(filename)
 	defer f.Close()
@@ -49,7 +50,7 @@ func WriteCsv(filename string, content []string) {
 	csvwriter.Flush()
 }
 
-//Search csv files in the current directory
+//LookForCsvFiles Search csv files in the current directory
 func LookForCsvFiles(file string) []string {
 	var existF []string
 	dir, err := ioutil.ReadDir(file)
@@ -62,8 +63,7 @@ func LookForCsvFiles(file string) []string {
 	return existF
 }
 
-//If User Used the Done Flag
-//We are gonna Replace the latest entry with "DOT" We are gonna use LIFO Method
+//RemoveLastElement removes the last element of the stack when done flag is true
 func RemoveLastElement(ideas [][]string) ([][]string, string) {
 	var message string
 	index := 1
@@ -89,7 +89,7 @@ func RemoveLastElement(ideas [][]string) ([][]string, string) {
 		} else {
 			for _, i := range tail {
 				if i == "." {
-					index += 1
+					index++
 				}
 			}
 			tot := tail[len(tail)-index]
