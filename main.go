@@ -1,40 +1,64 @@
 package main
 
 import (
-	"flag"
+	"bufio"
 	"fmt"
+	"os"
+	"os/exec"
+	"runtime"
+	"time"
 
-	"github.com/TaKeO90/brainstack/flaghandler"
+	"./csvhandler"
 )
 
 func main() {
-	var (
-		file  string
-		ideas string
-		add   bool
-		done  bool
-		reset bool
-	)
-	//flags for the program
-	flag.StringVar(&file, "f", "", "Specify the File Name Where To put your ideas")
-	flag.StringVar(&ideas, "i", "", "add ideas to the file")
-	flag.BoolVar(&add, "add", false, "true if you wanna add the ideas")
-	flag.BoolVar(&done, "done", false, "true if you finish executing an idea")
-	flag.BoolVar(&reset, "reset", false, "reset the file")
-	flag.Parse()
+	start := time.Now()
+	f := csvhandler.OpenCsvFile("file.csv")
+	content := csvhandler.ReadCsv(f)
+	t := time.Now()
+	elapsed := t.Sub(start)
+	fmt.Printf("Read File in %d\n", elapsed)
+	CmdStream(content)
+}
 
-	if add && file != "" {
-		msg := flaghandler.HandleAddingIdeas(ideas, file)
-		fmt.Println(msg)
-	} else if done {
-		f, m := flaghandler.HandleDoneFlag(file)
-		if len(f) != 0 {
-			fmt.Printf("Should Specify a file with 'f' flag %v\n", f)
-		} else if m != "" {
-			fmt.Println(m)
+func ClearScreen() {
+	switch OS := runtime.GOOS; OS {
+	case "linux":
+		c := exec.Command("clear")
+		c.Stdout = os.Stdout
+		c.Run()
+	case "windows":
+		c := exec.Command("cmd", "/c", "cls")
+		c.Stdout = os.Stdout
+		c.Run()
+	default:
+		c := exec.Command("clear")
+		c.Stdout = os.Stdout
+		c.Run()
+	}
+}
+
+func CmdStream(content [][]string) {
+	fmt.Printf("# ")
+	cmd := bufio.NewScanner(os.Stdin)
+	cmd.Scan()
+	switch cmd.Text() {
+	case "show":
+		csvhandler.PresentContent(content)
+		CmdStream(content)
+	case "done":
+		tail := csvhandler.ReturnTail(content)
+		ncontent := csvhandler.ReturnContent(tail, content)
+		if len(ncontent) == 0 {
+			fmt.Println("Empty")
+			ncontent = [][]string{{""}}
 		}
-	} else if reset && file != "" {
-		m := flaghandler.HandleResetFlag(file)
-		fmt.Println(m)
+		CmdStream(ncontent)
+	case "clear":
+		ClearScreen()
+		CmdStream(content)
+	default:
+		fmt.Println("Wrong Command")
+		CmdStream(content)
 	}
 }
