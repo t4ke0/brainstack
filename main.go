@@ -38,8 +38,6 @@ func ClearScreen() {
 	}
 }
 
-// TODO add (add command) to add more ideas or interact with the csv file
-
 func CmdStream(content [][]string) {
 	fmt.Printf("# ")
 	cmd := bufio.NewScanner(os.Stdin)
