@@ -1,7 +1,7 @@
 # BRAINSTACK 
 ```
   Program that stocks Your Idea as Stack of Ideas.
-  Once you use **done** flag you are gonna remove the lastone you insert **LIFO**
+
 ```
 
 
