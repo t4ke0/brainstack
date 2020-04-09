@@ -9,7 +9,7 @@
 
 ```
   $ go get 
-<<<<<<< HEAD
+
   $ go build -o brainstack main.go
   $ ./brainstack
 
@@ -21,7 +21,4 @@
   TODO add more commands ( add , help ) 
   TODO add FIFO and LIFO to done command
 ```
-=======
-  $ go build main.go -o brainstack
->>>>>>> 890e4104d3d41b8920b73024eee5a8082659437a
 
