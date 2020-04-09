@@ -9,7 +9,7 @@
 
 ```
   $ go get 
-  $ go build main.go -o brainstack
+  $ go build -o brainstack main.go
   $ ./brainstack
 
   When Executing it you can interact with the program with commands .
