@@ -9,7 +9,7 @@
 
 ```
   $ go get 
-  $ go build main.go -o brainstack
+  $ go build -o brainstack main.go
   
   After Building now you can interact with the program.
   $ show (show csv file content)
