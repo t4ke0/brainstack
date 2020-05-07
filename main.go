@@ -4,61 +4,75 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"os/exec"
-	"runtime"
-	"time"
+	"path/filepath"
+	"strings"
 
+	"./cmdhandler"
+	"./cmdtools"
 	"./csvhandler"
 )
 
-func main() {
-	start := time.Now()
-	f := csvhandler.OpenCsvFile("file.csv")
-	content := csvhandler.ReadCsv(f)
-	t := time.Now()
-	elapsed := t.Sub(start)
-	fmt.Printf("Read File in %d\n", elapsed)
-	CmdStream(content)
-}
+var c csvhandler.CSV
 
-func ClearScreen() {
-	switch OS := runtime.GOOS; OS {
-	case "linux":
-		c := exec.Command("clear")
-		c.Stdout = os.Stdout
-		c.Run()
-	case "windows":
-		c := exec.Command("cmd", "/c", "cls")
-		c.Stdout = os.Stdout
-		c.Run()
-	default:
-		c := exec.Command("clear")
-		c.Stdout = os.Stdout
-		c.Run()
+func main() {
+	if len(os.Args) < 2 {
+		fmt.Println("Usage ./brainstack <csv/json-file-name>")
+		os.Exit(1)
+	}
+	fileName := os.Args[1]
+	if filepath.Ext(fileName) == ".csv" {
+		f := csvhandler.OpenCsvFile(fileName)
+		content := c.ReadCsv(f)
+		CmdStream(content.Content, fileName)
+	} else if filepath.Ext(fileName) == ".json" {
+		cmdhandler.JSONcmdStream(fileName)
+	} else {
+		os.Exit(1)
 	}
 }
 
-func CmdStream(content [][]string) {
-	fmt.Printf("# ")
+func addContentCsv(elements []string, filename string) [][]string {
+	f := csvhandler.OpenCsvFile(filename)
+	ncontent := c.AddContent(elements, f)
+	return ncontent
+}
+
+//TODO : Remove CSV handling
+
+// TODO: Rename This Function To csvStream
+func CmdStream(content [][]string, filename string) {
+	fmt.Printf("csv# ")
 	cmd := bufio.NewScanner(os.Stdin)
 	cmd.Scan()
-	switch cmd.Text() {
+	switch cmmd := strings.Split(cmd.Text(), " ")[0]; cmmd {
 	case "show":
-		csvhandler.PresentContent(content)
-		CmdStream(content)
+		// Show content of the csv file directly by opening the csv file using tablewriter
+		c.PresentContent(filename)
+		CmdStream(content, filename)
 	case "done":
-		tail := csvhandler.ReturnTail(content)
-		ncontent := csvhandler.ReturnContent(tail, content)
+		if len(c.Content) == 0 {
+			fmt.Println("YOU Don't have nothing on your todos")
+			CmdStream(c.Content, filename)
+		}
+		tail := c.ReturnTail()
+		ncontent := c.ReturnContent(tail)
 		if len(ncontent) == 0 {
 			fmt.Println("Empty")
 			ncontent = [][]string{{""}}
 		}
-		CmdStream(ncontent)
+		c.Content = ncontent
+		CmdStream(ncontent, filename)
+	case "add":
+		contentToAdd := strings.Split(cmd.Text(), " ")[1:]
+		cnt := addContentCsv(contentToAdd, filename)
+		content = cnt
+		//content = append(content, contentToAdd)
+		CmdStream(content, filename)
 	case "clear":
-		ClearScreen()
-		CmdStream(content)
+		cmdtools.ClearScreen()
+		CmdStream(content, filename)
 	default:
-		fmt.Println("Wrong Command")
-		CmdStream(content)
+		//fmt.Println("Wrong Command")
+		CmdStream(content, filename)
 	}
 }
