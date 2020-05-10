@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 )
 
 type JSONcontent struct {
@@ -96,4 +97,26 @@ func WriteJSONcnt(filename, project, todos string) error {
 		}
 	}
 	return nil
+}
+
+//LIFO last in first out
+func LIFO(projectName string) JSONlist {
+	nlist := JSONlist{}
+	for _, i := range list {
+		if i.Project == projectName {
+			stodo := strings.Split(i.Todos, "")
+			if len(stodo) > 1 {
+				ntodo := strings.Split(i.Todos, ",")
+				ntodo = ntodo[:len(ntodo)-1]
+				i.Todos = strings.Join(ntodo, "")
+				nlist = append(nlist, i)
+			}
+			break
+		} else {
+			nlist = append(nlist, i)
+			continue
+		}
+	}
+	list = nlist
+	return list
 }

@@ -6,11 +6,9 @@ import (
 	"io"
 	"log"
 	"os"
-	//"strings"
 
 	"../cmdtools"
 	"../jsoncnt"
-	//	"../jsonhandler"
 )
 
 func checkError(err error) {
@@ -20,13 +18,21 @@ func checkError(err error) {
 }
 
 func JSONcmdParser(cmd string, filename string) {
-	main_cmd, mp, mt := cmdtools.ArgParser(cmd)
+	//main_cmd, mp, mt := cmdtools.ArgParser(cmd)
+	cmdtools.InitArg("project")
+	cmdtools.InitArg("todo")
+	main_cmd, a := cmdtools.ParseArg(cmd, "todo")
+
 	err := jsoncnt.OpenJSONfile(filename)
 	if err == io.EOF {
 		fmt.Println("empty")
 	} else if err != nil {
 		log.Fatal(err)
 	}
+
+	m := cmdtools.GetValue("project", a)
+	m1 := cmdtools.GetValue("todo", a)
+
 	switch main_cmd {
 	case "show":
 		l := jsoncnt.ShowJSONcnt()
@@ -35,7 +41,7 @@ func JSONcmdParser(cmd string, filename string) {
 		}
 		JSONcmdStream(filename)
 	case "add":
-		err := jsoncnt.WriteJSONcnt(filename, mp["--project"], mt["--todo"])
+		err := jsoncnt.WriteJSONcnt(filename, m["project"], m1["todo"])
 		if err != nil {
 			log.Fatal(err)
 		}

@@ -7,6 +7,15 @@ import (
 	"strings"
 )
 
+type Arg struct {
+	Name  string
+	Value string
+}
+
+type Arguments []Arg
+
+var Arglist Arguments
+
 func ClearScreen() {
 	switch OS := runtime.GOOS; OS {
 	case "linux":
@@ -24,30 +33,73 @@ func ClearScreen() {
 	}
 }
 
-var arguments = []string{"--project", "--todo"}
+// ADD other Arguments IF we need others
+//var arguments = []string{"--project", "--todo"}
+//
+//func ArgParser(cmd string) (string, map[string]string, map[string]string) {
+//	m := make(map[string]string)
+//	tm := make(map[string]string)
+//	f := strings.Fields(cmd)
+//	main_cmd := f[0]
+//	rest := f[1:]
+//	for n, c := range rest {
+//		for _, a := range arguments {
+//			if c == a && c != "--todo" {
+//				m[c] = rest[n+1]
+//			} else if c == a && c == "--todo" {
+//				var l []string
+//				for _, w := range rest[n+1:] {
+//					if w != "--project" {
+//						l = append(l, w)
+//					} else {
+//						break
+//					}
+//				}
+//				tm[c] = strings.Join(l, " ")
+//			}
+//		}
+//	}
+//	return main_cmd, m, tm
+//}
 
-func ArgParser(cmd string) (string, map[string]string, map[string]string) {
-	m := make(map[string]string)
-	tm := make(map[string]string)
-	f := strings.Fields(cmd)
-	main_cmd := f[0]
-	rest := f[1:]
-	for n, c := range rest {
-		for _, a := range arguments {
-			if c == a && c != "--todo" {
-				m[c] = rest[n+1]
-			} else if c == a && c == "--todo" {
-				var l []string
-				for _, w := range rest[n+1:] {
-					if w != "--project" {
-						l = append(l, w)
-					} else {
-						break
-					}
-				}
-				tm[c] = strings.Join(l, " ")
+func InitArg(argname string) Arguments {
+	a := &Arg{Name: argname, Value: ""}
+	Arglist = append(Arglist, *a)
+	return Arglist
+}
+
+func ParseArg(cmd, more string) (string, Arguments) {
+	scmd := strings.Split(cmd, " ")
+	main_cmd := scmd[0]
+	rest := scmd[1:]
+	var narglist Arguments
+	for j, i := range rest {
+		for _, a := range Arglist {
+			if strings.Trim(i, "--") == a.Name && more != a.Name {
+				a.Value = rest[j+1]
+				narglist = append(narglist, a)
+				break
+			} else if strings.Trim(i, "--") == a.Name && more == a.Name {
+				a.Value = strings.Join(rest[j+1:], "")
+				narglist = append(narglist, a)
+				break
+			} else {
+				continue
 			}
 		}
 	}
-	return main_cmd, m, tm
+	Arglist = narglist
+	return main_cmd, Arglist
+}
+
+func GetValue(argname string, l Arguments) map[string]string {
+	m := make(map[string]string)
+	if len(l) != 0 {
+		for _, a := range l {
+			if a.Name == argname {
+				m[argname] = a.Value
+			}
+		}
+	}
+	return m
 }
