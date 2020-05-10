@@ -68,7 +68,7 @@ func InitArg(argname string) Arguments {
 	return Arglist
 }
 
-func ParseArg(cmd, more string) (string, Arguments) {
+func ParseArg(cmd, more, exclude string) (string, Arguments) {
 	scmd := strings.Split(cmd, " ")
 	main_cmd := scmd[0]
 	rest := scmd[1:]
@@ -80,7 +80,15 @@ func ParseArg(cmd, more string) (string, Arguments) {
 				narglist = append(narglist, a)
 				break
 			} else if strings.Trim(i, "--") == a.Name && more == a.Name {
-				a.Value = strings.Join(rest[j+1:], "")
+				var tempL []string
+				for _, e := range rest[j+1:] {
+					if strings.Trim(e, "--") != exclude {
+						tempL = append(tempL, e)
+					} else {
+						break
+					}
+				}
+				a.Value = strings.Join(tempL, " ")
 				narglist = append(narglist, a)
 				break
 			} else {

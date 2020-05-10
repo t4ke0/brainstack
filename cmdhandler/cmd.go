@@ -19,9 +19,11 @@ func checkError(err error) {
 
 func JSONcmdParser(cmd string, filename string) {
 	//main_cmd, mp, mt := cmdtools.ArgParser(cmd)
+	//Init cmd args
 	cmdtools.InitArg("project")
 	cmdtools.InitArg("todo")
-	main_cmd, a := cmdtools.ParseArg(cmd, "todo")
+	// Parse args
+	main_cmd, a := cmdtools.ParseArg(cmd, "todo", "project")
 
 	err := jsoncnt.OpenJSONfile(filename)
 	if err == io.EOF {
@@ -29,7 +31,7 @@ func JSONcmdParser(cmd string, filename string) {
 	} else if err != nil {
 		log.Fatal(err)
 	}
-
+	//Get args Values
 	m := cmdtools.GetValue("project", a)
 	m1 := cmdtools.GetValue("todo", a)
 
@@ -41,11 +43,16 @@ func JSONcmdParser(cmd string, filename string) {
 		}
 		JSONcmdStream(filename)
 	case "add":
-		err := jsoncnt.WriteJSONcnt(filename, m["project"], m1["todo"])
-		if err != nil {
-			log.Fatal(err)
+		if m["project"] != "" && m1["todo"] != "" {
+			err := jsoncnt.WriteJSONcnt(filename, m["project"], m1["todo"])
+			if err != nil {
+				log.Fatal(err)
+			}
+			JSONcmdStream(filename)
+		} else {
+			fmt.Println("Wrong Args")
+			JSONcmdStream(filename)
 		}
-		JSONcmdStream(filename)
 	case "clear":
 		cmdtools.ClearScreen()
 		JSONcmdStream(filename)

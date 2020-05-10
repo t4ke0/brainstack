@@ -75,26 +75,35 @@ func ShowJSONcnt() JSONlist {
 	}
 }
 
+func searchList(elemnt string) bool {
+	if len(list) == 0 {
+		return false
+	}
+	for _, e := range list {
+		if e.Project == elemnt {
+			return true
+		}
+	}
+	return false
+}
+
 // WriteJSONcnt
 func WriteJSONcnt(filename, project, todos string) error {
 	f, err := checkForFile(filename)
 	if err != nil {
 		return err
 	}
-	var j = &JSONcontent{}
-	for _, p := range list {
-		if p.Project != project {
-			j.Project, j.Todos = project, todos
-			list = append(list, *j)
-			err := json.NewEncoder(f).Encode(list)
-			if err != nil {
-				return err
-			}
-			break
-		} else {
-			fmt.Println("Project Already Exist")
-			break
+	j := &JSONcontent{}
+	if exist := searchList(project); !exist {
+		j.Project, j.Todos = project, todos
+		list = append(list, *j)
+		err := json.NewEncoder(f).Encode(list)
+		if err != nil {
+			return err
 		}
+		fmt.Println("added")
+	} else {
+		fmt.Println("Project Already exist")
 	}
 	return nil
 }
