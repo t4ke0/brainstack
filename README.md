@@ -16,7 +16,7 @@
 
 ```
 
-#Usage
+# Usage
 
 ```shell
    $ ./brainstack <json file>
