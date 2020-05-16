@@ -1,23 +1,29 @@
 # BRAINSTACK 
+
+
 ```
-  Program that stocks Your Idea as Stack of Ideas.
+ brainstack is a program who stock your project and it todos and let you track them.
 
 ```
 
 
-## Usage 
+# Installation
 
 ```shell
   $ go get 
 
   $ go build -o brainstack main.go
-  $ ./brainstack
 
-  When Executing it you can interact with the program with commands .
-  $ show (shows the ideas you have in your csv file)
-  $ done (LIFO removes the last idea in you've entered)
-  $ clear (clears the screen)
-  
-  TODO add more commands ( add , help ) 
-  TODO add FIFO and LIFO to done command
 ```
+
+#Usage
+
+```shell
+   $ ./brainstack <json file>
+   $ init "Read json file Content".
+   $ show "Shows a table contains your projects and their todos.
+   $ done --project <project name> "For now we only support LIFO which means we remove the last todo of your project" .
+   $ add --project <project name> --todo <todos here> add new project and it todos .
+
+```
+
