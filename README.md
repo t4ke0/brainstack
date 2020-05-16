@@ -7,7 +7,7 @@
 
 ## Usage 
 
-```
+```shell
   $ go get 
 
   $ go build -o brainstack main.go
@@ -21,4 +21,3 @@
   TODO add more commands ( add , help ) 
   TODO add FIFO and LIFO to done command
 ```
-
