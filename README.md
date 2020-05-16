@@ -7,15 +7,17 @@
 
 ## Usage 
 
-```
+```shell
   $ go get 
+
   $ go build -o brainstack main.go
+  $ ./brainstack
+
+  When Executing it you can interact with the program with commands .
+  $ show (shows the ideas you have in your csv file)
+  $ done (LIFO removes the last idea in you've entered)
+  $ clear (clears the screen)
   
-  After Building now you can interact with the program.
-  $ show (show csv file content)
-  $ done (removes the last element of the stack LIFO)
-
-  TODO add other commands such as (add , help , etc ...)
-  TODO add to done command (LIFO & FIFO) subcommands
-
+  TODO add more commands ( add , help ) 
+  TODO add FIFO and LIFO to done command
 ```
