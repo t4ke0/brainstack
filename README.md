@@ -21,9 +21,9 @@
 ```shell
    $ ./brainstack <json file>
    $ init "Read json file Content".
-   $ show "Shows a table contains your projects and their todos.
+   $ show "Shows a table contains your projects and their todos".
    $ done --project <project name> "For now we only support LIFO which means we remove the last todo of your project" .
-   $ add --project <project name> --todo <todos here> add new project and it todos .
+   $ add --project <project name> --todo <todos here> "add new project and it todos" .
 
 ```
 
