@@ -8,11 +8,15 @@ import (
 	"strings"
 )
 
+//JSONcontent struct it has the instance that we are using to store
+//project and todos as a json format
 type JSONcontent struct {
 	Project string `json:"Project"`
 	Todos   string `json:"Todos"`
 }
 
+//JSONlist list of JSONcontent where we store all project & todos
+//to have an easy way to show and store other JSONcontent instances
 type JSONlist []JSONcontent
 
 var list JSONlist
@@ -66,13 +70,12 @@ func OpenJSONfile(filename string) error {
 	return nil
 }
 
-// ShowJSONcnt
+// ShowJSONcnt show content of JSONlist
 func ShowJSONcnt() JSONlist {
 	if len(list) != 0 {
 		return list
-	} else {
-		return nil
 	}
+	return nil
 }
 
 func searchList(elemnt string) bool {
@@ -87,7 +90,7 @@ func searchList(elemnt string) bool {
 	return false
 }
 
-// WriteJSONcnt
+// WriteJSONcnt Add To JSON file content
 func WriteJSONcnt(filename, project, todos string) error {
 	f, err := checkForFile(filename)
 	if err != nil {
@@ -101,11 +104,32 @@ func WriteJSONcnt(filename, project, todos string) error {
 		if err != nil {
 			return err
 		}
-		fmt.Println("added")
+		fmt.Println("Saved into the File")
 	} else {
 		fmt.Println("Project Already exist")
 	}
 	return nil
+}
+
+//SaveCnt save the list in it's current situation to the json file
+func SaveCnt(filename string) (bool, error) {
+	// try to remove the file first
+	if err := os.Remove(filename); err != nil {
+		return false, err
+	}
+
+	f, err := checkForFile(filename)
+	if err != nil {
+		return false, err
+	}
+	if len(list) != 0 {
+		err := json.NewEncoder(f).Encode(list)
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+	return false, nil
 }
 
 //LIFO last in first out
@@ -113,14 +137,15 @@ func LIFO(projectName string) JSONlist {
 	nlist := JSONlist{}
 	for _, i := range list {
 		if i.Project == projectName {
-			stodo := strings.Split(i.Todos, "")
+			// split todos
+			stodo := strings.Split(i.Todos, " ")
+			//if len of todos after spliting it is greater than 1
 			if len(stodo) > 1 {
 				ntodo := strings.Split(i.Todos, ",")
 				ntodo = ntodo[:len(ntodo)-1]
 				i.Todos = strings.Join(ntodo, "")
 				nlist = append(nlist, i)
 			}
-			break
 		} else {
 			nlist = append(nlist, i)
 			continue
@@ -129,3 +154,7 @@ func LIFO(projectName string) JSONlist {
 	list = nlist
 	return list
 }
+
+//TODO: Add FIFO SuPPort
+//TODO: Support add to a specific project other todos
+//TODO: Done commands should support removing the todo by name of a specific project .

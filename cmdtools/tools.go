@@ -7,15 +7,19 @@ import (
 	"strings"
 )
 
+//Arg struct who hold the pairs of Name & value of the arguments
 type Arg struct {
 	Name  string
 	Value string
 }
 
+//Arguments Array of Arg
 type Arguments []Arg
 
+//Arglist variable which it's type is the array of Arg
 var Arglist Arguments
 
+//ClearScreen clear terminal window for several OS systems
 func ClearScreen() {
 	switch OS := runtime.GOOS; OS {
 	case "linux":
@@ -33,44 +37,20 @@ func ClearScreen() {
 	}
 }
 
-// ADD other Arguments IF we need others
-//var arguments = []string{"--project", "--todo"}
-//
-//func ArgParser(cmd string) (string, map[string]string, map[string]string) {
-//	m := make(map[string]string)
-//	tm := make(map[string]string)
-//	f := strings.Fields(cmd)
-//	main_cmd := f[0]
-//	rest := f[1:]
-//	for n, c := range rest {
-//		for _, a := range arguments {
-//			if c == a && c != "--todo" {
-//				m[c] = rest[n+1]
-//			} else if c == a && c == "--todo" {
-//				var l []string
-//				for _, w := range rest[n+1:] {
-//					if w != "--project" {
-//						l = append(l, w)
-//					} else {
-//						break
-//					}
-//				}
-//				tm[c] = strings.Join(l, " ")
-//			}
-//		}
-//	}
-//	return main_cmd, m, tm
-//}
-
+//InitArg initialize argument put them in Arg struct it has Name & Value pair instances
 func InitArg(argname string) Arguments {
 	a := &Arg{Name: argname, Value: ""}
 	Arglist = append(Arglist, *a)
 	return Arglist
 }
 
+//ParseArg get the cmd , more and exclude as input
+// for more is the argument that we need to get a big amount of string sequence as value
+// and exclude is the argument that we are gonna skip when are we gonna get the value
+// of `more` argument.
 func ParseArg(cmd, more, exclude string) (string, Arguments) {
 	scmd := strings.Split(cmd, " ")
-	main_cmd := scmd[0]
+	mainCmd := scmd[0]
 	rest := scmd[1:]
 	var narglist Arguments
 	for j, i := range rest {
@@ -97,9 +77,11 @@ func ParseArg(cmd, more, exclude string) (string, Arguments) {
 		}
 	}
 	Arglist = narglist
-	return main_cmd, Arglist
+	return mainCmd, Arglist
 }
 
+//GetValue Get the argname as input and the argument list then returns a map[string]string
+//which is the argument and it value as a map.
 func GetValue(argname string, l Arguments) map[string]string {
 	m := make(map[string]string)
 	if len(l) != 0 {
@@ -110,4 +92,11 @@ func GetValue(argname string, l Arguments) map[string]string {
 		}
 	}
 	return m
+}
+
+//HelpMenu show help to the User
+func HelpMenu() []string {
+	var help []string
+	help = []string{"init initialize your content from json file to the program", "show shows you your projects and todos in a table", "add  add projects and todos to your json file and save them there eg. add --project <project name> --todo <todo here> ", "save save changes you have made", "clear clears the screen", "done if you done with a todo"}
+	return help
 }

@@ -6,9 +6,11 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 
 	"../cmdtools"
 	"../jsoncnt"
+	"github.com/olekukonko/tablewriter"
 )
 
 func checkError(err error) {
@@ -17,29 +19,43 @@ func checkError(err error) {
 	}
 }
 
+//JSONcmdParser Parse the Commands executed by the user from the dashboard
 func JSONcmdParser(cmd string, filename string) {
-	//main_cmd, mp, mt := cmdtools.ArgParser(cmd)
-	//Init cmd args
 	cmdtools.InitArg("project")
 	cmdtools.InitArg("todo")
 	// Parse args
-	main_cmd, a := cmdtools.ParseArg(cmd, "todo", "project")
+	mainCmd, a := cmdtools.ParseArg(cmd, "todo", "project")
 
-	err := jsoncnt.OpenJSONfile(filename)
-	if err == io.EOF {
-		fmt.Println("empty")
-	} else if err != nil {
-		log.Fatal(err)
-	}
 	//Get args Values
 	m := cmdtools.GetValue("project", a)
 	m1 := cmdtools.GetValue("todo", a)
 
-	switch main_cmd {
+	switch mainCmd {
+	case "init":
+		err := jsoncnt.OpenJSONfile(filename)
+		if err == io.EOF {
+			fmt.Println("empty")
+		} else if err != nil {
+			log.Fatal(err)
+		}
+		JSONcmdStream(filename)
 	case "show":
 		l := jsoncnt.ShowJSONcnt()
-		for _, p := range l {
-			fmt.Printf("Project:%s\t Todos:%s\n", p.Project, p.Todos)
+		table := tablewriter.NewWriter(os.Stdout)
+		table.SetHeader([]string{"Projects & Todos"})
+		var data [][]string
+		if len(l) != 0 {
+			for _, p := range l {
+				todo := strings.Split("=>"+p.Todos, "\n")
+				projc := strings.Split(strings.ToUpper(p.Project+":"), "\n")
+				data = append(data, projc, todo)
+			}
+			for _, v := range data {
+				table.Append(v)
+			}
+			table.Render()
+		} else {
+			fmt.Println("You Have no Projects Or you Forgot to execute init cmd")
 		}
 		JSONcmdStream(filename)
 	case "add":
@@ -53,17 +69,38 @@ func JSONcmdParser(cmd string, filename string) {
 			fmt.Println("Wrong Args")
 			JSONcmdStream(filename)
 		}
+	case "save":
+		saved, err := jsoncnt.SaveCnt(filename)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if saved {
+			fmt.Println("Saved ...")
+		} else {
+			fmt.Println("no changes has been maded")
+		}
+		JSONcmdStream(filename)
 	case "clear":
 		cmdtools.ClearScreen()
 		JSONcmdStream(filename)
+	case "done":
+		jsoncnt.LIFO(m["project"])
+		JSONcmdStream(filename)
+	case "help":
+		hl := cmdtools.HelpMenu()
+		for _, h := range hl {
+			fmt.Println(h)
+		}
+		JSONcmdStream(filename)
 	default:
-		fmt.Println("No such Command")
+		fmt.Println("No Such Command Found")
 		JSONcmdStream(filename)
 	}
 }
 
+//JSONcmdStream the DashBoard of the User
 func JSONcmdStream(filename string) {
-	fmt.Printf("json# ")
+	fmt.Printf("BRAINSTACK# ")
 	cmd := bufio.NewScanner(os.Stdin)
 	cmd.Scan()
 	command := cmd.Text()
