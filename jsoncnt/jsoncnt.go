@@ -2,7 +2,7 @@ package jsoncnt
 
 import (
 	"encoding/json"
-	"fmt"
+	//"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -91,10 +91,13 @@ func searchList(elemnt string) bool {
 }
 
 // WriteJSONcnt Add To JSON file content
-func WriteJSONcnt(filename, project, todos string) error {
+func WriteJSONcnt(filename, project, todos string) (error, bool) {
+	if project == "" && todos == "" {
+		return nil, false
+	}
 	f, err := checkForFile(filename)
 	if err != nil {
-		return err
+		return err, false
 	}
 	j := &JSONcontent{}
 	if exist := searchList(project); !exist {
@@ -102,13 +105,13 @@ func WriteJSONcnt(filename, project, todos string) error {
 		list = append(list, *j)
 		err := json.NewEncoder(f).Encode(list)
 		if err != nil {
-			return err
+			return err, false
 		}
-		fmt.Println("Saved into the File")
-	} else {
-		fmt.Println("Project Already exist")
+		//fmt.Println("Saved into the File")
+		return nil, true
 	}
-	return nil
+	//fmt.Println("Project Already exist")
+	return nil, false
 }
 
 //SaveCnt save the list in it's current situation to the json file
@@ -133,13 +136,14 @@ func SaveCnt(filename string) (bool, error) {
 }
 
 //LIFO last in first out
-func LIFO(projectName string) JSONlist {
+func LIFO(projectName string) bool {
 	nlist := JSONlist{}
+	if len(list) == 0 || projectName == "" {
+		return false
+	}
 	for _, i := range list {
 		if i.Project == projectName {
-			// split todos
 			stodo := strings.Split(i.Todos, " ")
-			//if len of todos after spliting it is greater than 1
 			if len(stodo) > 1 {
 				ntodo := strings.Split(i.Todos, ",")
 				ntodo = ntodo[:len(ntodo)-1]
@@ -152,9 +156,70 @@ func LIFO(projectName string) JSONlist {
 		}
 	}
 	list = nlist
-	return list
+	return true
 }
 
-//TODO: Add FIFO SuPPort
-//TODO: Support add to a specific project other todos
-//TODO: Done commands should support removing the todo by name of a specific project .
+//AddTodo add Todo to a particular project
+func AddTodo(projectName, newTodo string) bool {
+	var nlist JSONlist
+	if projectName == "" && newTodo == "" {
+		return false
+	}
+	if len(list) == 0 {
+		return false
+	}
+	for _, n := range list {
+		if n.Project == projectName {
+			todoS := strings.Split(n.Todos, ",")
+			todoS = append(todoS, newTodo)
+			n.Todos = strings.Join(todoS, ",")
+			nlist = append(nlist, n)
+		} else {
+			nlist = append(nlist, n)
+		}
+	}
+	list = nlist
+	return true
+}
+
+//FIFO remove the first element of the todo string
+func FIFO(projectName string) bool {
+	var nlist JSONlist
+	if len(list) == 0 || projectName == "" {
+		return false
+	}
+	for _, n := range list {
+		if n.Project == projectName {
+			stodo := strings.Split(n.Todos, ",")
+			if len(stodo) > 1 {
+				ntodo := stodo[len(stodo)-1:]
+				n.Todos = strings.Join(ntodo, ",")
+				nlist = append(nlist, n)
+			}
+		} else {
+			nlist = append(nlist, n)
+		}
+	}
+	list = nlist
+	return true
+}
+
+//RemoveTodo remove todo for a particular project
+func RemoveTodo(projectName, todo string) bool {
+	var nlist JSONlist
+	if len(list) == 0 || projectName == "" {
+		return false
+	}
+	for _, n := range list {
+		if n.Project == projectName {
+			stodo := strings.Replace(n.Todos, todo, "", 1)
+			ntodo := strings.Split(stodo, ",")
+			n.Todos = strings.Join(ntodo, "")
+			nlist = append(nlist, n)
+		} else {
+			nlist = append(nlist, n)
+		}
+	}
+	list = nlist
+	return true
+}

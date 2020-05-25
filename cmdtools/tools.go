@@ -97,6 +97,6 @@ func GetValue(argname string, l Arguments) map[string]string {
 //HelpMenu show help to the User
 func HelpMenu() []string {
 	var help []string
-	help = []string{"init initialize your content from json file to the program", "show shows you your projects and todos in a table", "add  add projects and todos to your json file and save them there eg. add --project <project name> --todo <todo here> ", "save save changes you have made", "clear clears the screen", "done if you done with a todo"}
+	help = []string{"init initialize your content from json file to the program", "show shows you your projects and todos in a table", "add  add projects and todos to your json file and save them there eg. add --project <project name> --todo <todo here> ", "save save changes you have made", "clear clears the screen", "FIFO if you done with the first element if your todo list", "LIFO your last element", "removetodo to remove a specific todo of a project"}
 	return help
 }
