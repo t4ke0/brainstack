@@ -91,13 +91,13 @@ func searchList(elemnt string) bool {
 }
 
 // WriteJSONcnt Add To JSON file content
-func WriteJSONcnt(filename, project, todos string) (error, bool) {
+func WriteJSONcnt(filename, project, todos string) (bool, error) {
 	if project == "" && todos == "" {
-		return nil, false
+		return false, nil
 	}
 	f, err := checkForFile(filename)
 	if err != nil {
-		return err, false
+		return false, err
 	}
 	j := &JSONcontent{}
 	if exist := searchList(project); !exist {
@@ -105,13 +105,13 @@ func WriteJSONcnt(filename, project, todos string) (error, bool) {
 		list = append(list, *j)
 		err := json.NewEncoder(f).Encode(list)
 		if err != nil {
-			return err, false
+			return false, err
 		}
-		//fmt.Println("Saved into the File")
-		return nil, true
+		//"Saved into the File"
+		return true, nil
 	}
-	//fmt.Println("Project Already exist")
-	return nil, false
+	//"Project Already exist"
+	return false, nil
 }
 
 //SaveCnt save the list in it's current situation to the json file
