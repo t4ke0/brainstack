@@ -1,3 +1,6 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/TaKeO90/brainstack)](https://goreportcard.com/report/github.com/TaKeO90/brainstack)
+
+
 # BRAINSTACK 
 
 
