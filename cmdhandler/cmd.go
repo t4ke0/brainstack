@@ -82,6 +82,34 @@ func saver(filename string) (string, error) {
 	return "no changes has been maded", nil
 }
 
+func showHelp() {
+	hl := cmdtools.HelpMenu()
+	for _, h := range hl {
+		fmt.Println(h)
+	}
+}
+
+func removeLast(project string) string {
+	if ok := jsoncnt.LIFO(project); ok {
+		return "removed successFully"
+	}
+	return "Failed"
+}
+
+func removeFirst(project string) string {
+	if ok := jsoncnt.FIFO(project); ok {
+		return "removed successFully"
+	}
+	return "Failed"
+}
+
+func todoRemover(project, todo string) string {
+	if ok := jsoncnt.RemoveTodo(project, todo); ok {
+		return fmt.Sprintf("removed %s SuccessFully\n", todo)
+	}
+	return fmt.Sprintf("Failed to remove %s\n", todo)
+}
+
 //JSONcmdParser Parse the Commands executed by the user from the dashboard
 func JSONcmdParser(cmd string, filename string) {
 	cmdtools.InitArg("project")
@@ -117,25 +145,19 @@ func JSONcmdParser(cmd string, filename string) {
 		cmdtools.ClearScreen()
 		JSONcmdStream(filename)
 	case "LIFO":
-		if ok := jsoncnt.LIFO(m["project"]); ok {
-			fmt.Println("removed successFully")
-		}
+		rm := removeLast(m["project"])
+		fmt.Println(rm)
 		JSONcmdStream(filename)
 	case "FIFO":
-		if ok := jsoncnt.FIFO(m["project"]); ok {
-			fmt.Println("removed successFully")
-		}
+		rm := removeFirst(m["project"])
+		fmt.Println(rm)
 		JSONcmdStream(filename)
 	case "removetodo":
-		if ok := jsoncnt.RemoveTodo(m["project"], m1["todo"]); ok {
-			fmt.Printf("removed %s SuccessFully\n", m1["todo"])
-		}
+		rm := todoRemover(m["project"], m1["todo"])
+		fmt.Println(rm)
 		JSONcmdStream(filename)
 	case "help":
-		hl := cmdtools.HelpMenu()
-		for _, h := range hl {
-			fmt.Println(h)
-		}
+		showHelp()
 		JSONcmdStream(filename)
 	default:
 		fmt.Println("No Such Command Found")
