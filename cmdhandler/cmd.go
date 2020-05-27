@@ -61,7 +61,7 @@ func JSONcmdParser(cmd string, filename string) {
 		}
 		JSONcmdStream(filename)
 	case "add":
-		err, isSaved := jsoncnt.WriteJSONcnt(filename, m["project"], m1["todo"])
+		isSaved, err := jsoncnt.WriteJSONcnt(filename, m["project"], m1["todo"])
 		checkError(err)
 		if isSaved {
 			fmt.Println("saved to File")
@@ -90,12 +90,12 @@ func JSONcmdParser(cmd string, filename string) {
 	case "clear":
 		cmdtools.ClearScreen()
 		JSONcmdStream(filename)
-	case "FIFO":
+	case "LIFO":
 		if ok := jsoncnt.LIFO(m["project"]); ok {
 			fmt.Println("removed successFully")
 		}
 		JSONcmdStream(filename)
-	case "LIFO":
+	case "FIFO":
 		if ok := jsoncnt.FIFO(m["project"]); ok {
 			fmt.Println("removed successFully")
 		}
