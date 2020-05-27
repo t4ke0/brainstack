@@ -22,6 +22,66 @@ func checkError(err error) {
 	}
 }
 
+func initData(filename string) error {
+	err := jsoncnt.OpenJSONfile(filename)
+	if err == io.EOF {
+		err = fmt.Errorf("%s", "empty")
+	} else if err != nil {
+		return err
+	}
+	return err
+}
+
+func dataPresentation() {
+	l := jsoncnt.ShowJSONcnt()
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Projects & Todos"})
+	var data [][]string
+	if len(l) != 0 {
+		for _, p := range l {
+			todo := strings.Split("=>"+p.Todos, "\n")
+			projc := strings.Split(strings.ToUpper(p.Project+":"), "\n")
+			data = append(data, projc, todo)
+		}
+		for _, v := range data {
+			table.Append(v)
+		}
+		table.Render()
+	} else {
+		fmt.Println("You Have no Projects Or you Forgot to execute init cmd")
+	}
+}
+
+func addNew(filename, project, todo string) (string, error) {
+	isSaved, err := jsoncnt.WriteJSONcnt(filename, project, todo)
+	if err != nil {
+		return "", err
+	}
+	if isSaved {
+		return "saved to File", nil
+	}
+	return "Wrong Args", nil
+}
+
+func todoAdder(project, todo string) string {
+	todoAdded := jsoncnt.AddTodo(project, todo)
+	if todoAdded {
+		return fmt.Sprintf("added %s successfully\n", todo)
+	}
+	return "need project and todo values"
+}
+
+func saver(filename string) (string, error) {
+	saved, err := jsoncnt.SaveCnt(filename)
+	if err != nil {
+		return "", err
+	}
+	if saved {
+		return "Saved ...", nil
+	}
+	return "no changes has been maded", nil
+}
+
 //JSONcmdParser Parse the Commands executed by the user from the dashboard
 func JSONcmdParser(cmd string, filename string) {
 	cmdtools.InitArg("project")
@@ -34,58 +94,24 @@ func JSONcmdParser(cmd string, filename string) {
 
 	switch mainCmd {
 	case "init":
-		err := jsoncnt.OpenJSONfile(filename)
-		if err == io.EOF {
-			fmt.Println("empty")
-		} else if err != nil {
-			log.Fatal(err)
-		}
+		initData(filename)
 		JSONcmdStream(filename)
 	case "show":
-		l := jsoncnt.ShowJSONcnt()
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Projects & Todos"})
-		var data [][]string
-		if len(l) != 0 {
-			for _, p := range l {
-				todo := strings.Split("=>"+p.Todos, "\n")
-				projc := strings.Split(strings.ToUpper(p.Project+":"), "\n")
-				data = append(data, projc, todo)
-			}
-			for _, v := range data {
-				table.Append(v)
-			}
-			table.Render()
-		} else {
-			fmt.Println("You Have no Projects Or you Forgot to execute init cmd")
-		}
+		dataPresentation()
 		JSONcmdStream(filename)
 	case "add":
-		isSaved, err := jsoncnt.WriteJSONcnt(filename, m["project"], m1["todo"])
+		msg, err := addNew(filename, m["project"], m1["todo"])
 		checkError(err)
-		if isSaved {
-			fmt.Println("saved to File")
-			JSONcmdStream(filename)
-		} else {
-			fmt.Println("Wrong Args")
-			JSONcmdStream(filename)
-		}
+		fmt.Println(msg)
+		JSONcmdStream(filename)
 	case "addTodo":
-		todoAdded := jsoncnt.AddTodo(m["project"], m1["todo"])
-		if todoAdded {
-			fmt.Printf("added %s successfully\n", m1["todo"])
-		} else {
-			fmt.Println("need project and todo values")
-		}
+		msg := todoAdder(m["project"], m1["todo"])
+		fmt.Println(msg)
 		JSONcmdStream(filename)
 	case "save":
-		saved, err := jsoncnt.SaveCnt(filename)
+		msg, err := saver(filename)
 		checkError(err)
-		if saved {
-			fmt.Println("Saved ...")
-		} else {
-			fmt.Println("no changes has been maded")
-		}
+		fmt.Println(msg)
 		JSONcmdStream(filename)
 	case "clear":
 		cmdtools.ClearScreen()
