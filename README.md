@@ -15,18 +15,24 @@
 ```shell
   $ go get 
 
-  $ go build -o brainstack main.go
+  $ go build .
 
 ```
 
 # Usage
 
 ```shell
-   $ ./brainstack <json file>
-   $ init "Read json file Content".
-   $ show "Shows a table contains your projects and their todos".
-   $ done --project <project name> "For now we only support LIFO which means we remove the last todo of your project" .
-   $ add --project <project name> --todo <todos here> "add new project and it todos" .
+   * CLI version
+   $ ./brainstack -runcmd -file <json file>
+   $brainstack init "Read json file Content".
+   $brainstack show "Shows a table contains your projects and their todos".
+   $brainstack done --project <project name> "For now we only support LIFO which means we remove the last todo of your project" .
+   $brainstack add --project <project name> --todo <todos here> "add new project and it todos" .
+   
+   * TUI version
+   $ ./brainstack -runtui -file <json file>
 
 ```
 
+# TODO ..... 
+* need to document the tui programs with keybinding and other stuff .
