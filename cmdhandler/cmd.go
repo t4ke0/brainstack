@@ -1,7 +1,5 @@
 package cmdhandler
 
-//TODO: JSONcmdParser Should be re-writed with a good way "gocyclo"
-//TODO: JSONcmdParser should return somthing then print it in the main package
 //TODO: introduce ncurses for your program
 import (
 	"bufio"
@@ -23,7 +21,7 @@ func checkError(err error) {
 }
 
 func initData(filename string) error {
-	err := jsoncnt.OpenJSONfile(filename)
+	err := jsoncnt.OpenJSONfile(filename, false, true)
 	if err == io.EOF {
 		err = fmt.Errorf("%s", "empty")
 	} else if err != nil {

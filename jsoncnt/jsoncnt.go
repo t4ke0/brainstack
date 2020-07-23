@@ -2,7 +2,6 @@ package jsoncnt
 
 import (
 	"encoding/json"
-	//"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -15,12 +14,24 @@ type JSONcontent struct {
 	Todos   string `json:"Todos"`
 }
 
+//DoneTasks represent the tasks that has been marked as Done
+type DoneTasks struct {
+	ProjectName string
+	Task        []string
+}
+
+type DoneTasksList []DoneTasks
+
 //JSONlist list of JSONcontent where we store all project & todos
 //to have an easy way to show and store other JSONcontent instances
 type JSONlist []JSONcontent
 
-var list JSONlist
+var (
+	list  JSONlist
+	dlist DoneTasksList
+)
 
+//TODO: replace this function with os.Create
 func checkForFile(filename string) (*os.File, error) {
 	var f *os.File
 	dir, err := ioutil.ReadDir("./")
@@ -43,25 +54,35 @@ func checkForFile(filename string) (*os.File, error) {
 	return f, nil
 }
 
-// OpenJSONfile accept filename as input it opens the file & return *os.File
-func OpenJSONfile(filename string) error {
+// OpenJSONfile accept filename as input it opens the file
+func OpenJSONfile(filename string, readDoneT, readCnt bool) error {
 	f, err := checkForFile(filename)
 	if err != nil {
 		return err
 	}
 	list = list[:0]
+	dlist = dlist[:0]
 	dec := json.NewDecoder(f)
 	_, err = dec.Token()
 	if err != nil {
 		return err
 	}
 	var j JSONcontent
+	var dt DoneTasks
 	for dec.More() {
-		err := dec.Decode(&j)
-		if err != nil {
-			return err
+		if readCnt {
+			err := dec.Decode(&j)
+			if err != nil {
+				return err
+			}
+			list = append(list, j)
+		} else if readDoneT {
+			err := dec.Decode(&dt)
+			if err != nil {
+				return err
+			}
+			dlist = append(dlist, dt)
 		}
-		list = append(list, j)
 	}
 	_, err = dec.Token()
 	if err != nil {
@@ -78,11 +99,19 @@ func ShowJSONcnt() JSONlist {
 	return nil
 }
 
-func searchList(elemnt string) bool {
-	if len(list) == 0 {
+// ShowDoneTask show done tasks list
+func ShowDoneTask() DoneTasksList {
+	if len(dlist) != 0 {
+		return dlist
+	}
+	return nil
+}
+
+func SearchList(elemnt string, cArr JSONlist) bool {
+	if len(cArr) == 0 {
 		return false
 	}
-	for _, e := range list {
+	for _, e := range cArr {
 		if e.Project == elemnt {
 			return true
 		}
@@ -90,7 +119,35 @@ func searchList(elemnt string) bool {
 	return false
 }
 
+//SaveDoneTasks get DoneTasksList type as input then save
+//	it on done tasks file.
+func SaveDoneTasks(filename string, doneT DoneTasksList) (bool, error) {
+	f, err := checkForFile(filename)
+	if err != nil {
+		return false, err
+	}
+	err = json.NewEncoder(f).Encode(doneT)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+//SavePT saves JSONlist elements to a json file
+func SavePT(filename string, data JSONlist) (bool, error) {
+	f, err := checkForFile(filename)
+	if err == nil {
+		err = json.NewEncoder(f).Encode(data)
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+	return false, err
+}
+
 // WriteJSONcnt Add To JSON file content
+// add new Project and it todos into json file
 func WriteJSONcnt(filename, project, todos string) (bool, error) {
 	if project == "" && todos == "" {
 		return false, nil
@@ -100,7 +157,7 @@ func WriteJSONcnt(filename, project, todos string) (bool, error) {
 		return false, err
 	}
 	j := &JSONcontent{}
-	if exist := searchList(project); !exist {
+	if exist := SearchList(project, list); !exist {
 		j.Project, j.Todos = project, todos
 		list = append(list, *j)
 		err := json.NewEncoder(f).Encode(list)
@@ -114,6 +171,8 @@ func WriteJSONcnt(filename, project, todos string) (bool, error) {
 	return false, nil
 }
 
+//TODO: this function could consume a lot of ressources
+//	cause we are removing the json file and then we recreating another one.
 //SaveCnt save the list in it's current situation to the json file
 func SaveCnt(filename string) (bool, error) {
 	// try to remove the file first
