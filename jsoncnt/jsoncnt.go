@@ -16,10 +16,11 @@ type JSONcontent struct {
 
 //DoneTasks represent the tasks that has been marked as Done
 type DoneTasks struct {
-	ProjectName string
-	Task        []string
+	ProjectName string   `json:"ProjectName"`
+	Task        []string `json:"Task"`
 }
 
+// DoneTasksList type that we use to store all Done tasks as a JSON array
 type DoneTasksList []DoneTasks
 
 //JSONlist list of JSONcontent where we store all project & todos
@@ -31,7 +32,6 @@ var (
 	dlist DoneTasksList
 )
 
-//TODO: replace this function with os.Create
 func checkForFile(filename string) (*os.File, error) {
 	var f *os.File
 	dir, err := ioutil.ReadDir("./")
@@ -107,6 +107,7 @@ func ShowDoneTask() DoneTasksList {
 	return nil
 }
 
+// SearchList search if an element exist on JSONlist
 func SearchList(elemnt string, cArr JSONlist) bool {
 	if len(cArr) == 0 {
 		return false
@@ -171,8 +172,6 @@ func WriteJSONcnt(filename, project, todos string) (bool, error) {
 	return false, nil
 }
 
-//TODO: this function could consume a lot of ressources
-//	cause we are removing the json file and then we recreating another one.
 //SaveCnt save the list in it's current situation to the json file
 func SaveCnt(filename string) (bool, error) {
 	// try to remove the file first

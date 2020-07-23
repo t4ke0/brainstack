@@ -5,11 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"./auxilary"
+	"github.com/TaKeO90/brainstack/tui/auxilary"
 	"github.com/jroimartin/gocui"
 )
 
-//   TODO : we don't need command argument i Guess we just need to save the views at their current status when the user uses the command `save`
 //#2 TODO:get keybinding from config file
 
 func checkError(err error) {
