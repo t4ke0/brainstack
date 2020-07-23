@@ -6,20 +6,21 @@ import (
 	"log"
 	"strings"
 
-	"../../jsoncnt"
+	"github.com/TaKeO90/brainstack/jsoncnt"
 	"github.com/jroimartin/gocui"
 )
 
 const doneTaskFile string = "done.json"
 
 var (
-	lock = true //lock this variable give the user the premission to execute,
-	//command after initializing the json file
+	//lock this variable give the user the premission to execute command after initializing the json file
+	lock = true
 
-	Editable = false //Editable global variable indicate wheter a certain view,
-	//is in edit mode or not
+	//Editable global variable indicate wheter a certain view is in edit mode or not
+	Editable = false
 
-	LHighP string //LHighP last selected project.
+	//LHighP last selected project.
+	LHighP string
 
 	//CntList where we store projects and their todos.
 	CntList jsoncnt.JSONlist
@@ -28,16 +29,17 @@ var (
 	DoneList jsoncnt.DoneTasksList
 )
 
-//DataSaver save data (projects or todos)
+// TaskDataSaver an interface that has a method that saves a new task
 type TaskDataSaver interface {
 	saveNewTasks() (bool, bool)
 }
 
+// ProjectDataSaver an interface that holds a method which saves new projects
 type ProjectDataSaver interface {
 	saveNewProjects() bool
 }
 
-//Tasks
+// Tasks struct we store on it projects and their todos
 type Tasks struct {
 	//Selected project that the user save it todos
 	Project string
@@ -45,7 +47,7 @@ type Tasks struct {
 	Todos []string
 }
 
-//Projects
+// Projects has ProjectList where we store project view elements
 type Projects struct {
 	ProjectList []string
 }
@@ -196,7 +198,6 @@ func getNewData(g *gocui.Gui, Vctg string) (*Tasks, *Projects) {
 	}
 }
 
-//TODO: when you get todo view data you need to compare it with the equivalent  todos in the original list
 func (vd *Tasks) saveNewTasks() (bool, bool) {
 	if vd != nil && CntList != nil {
 		for i, n := range CntList {
@@ -353,6 +354,7 @@ func orderViews(views []*gocui.View) []*gocui.View {
 	return views
 }
 
+// KeyBindingHandler Handles Keybinding
 func KeyBindingHandler(g *gocui.Gui, filename string) {
 	lv, err := g.View("list")
 	checkError(err)
@@ -579,17 +581,3 @@ func KeyBindingHandler(g *gocui.Gui, filename string) {
 		return nil
 	})
 }
-
-//TODO : I'm not sure if this function helps with something
-//func compareBuffers(v *gocui.View) []string {
-//	var res []string
-//	cBuff := v.BufferLines()
-//	if len(CntList) == len(cBuff) {
-//		for i, n := range cBuff {
-//			if n != CntList[i].Project {
-//				res = append(res, CntList[i].Project)
-//			}
-//		}
-//	}
-//	return res
-//}

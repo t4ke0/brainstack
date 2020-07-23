@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"./cmdhandler"
+	"github.com/TaKeO90/brainstack/cmdhandler"
 )
 
 var (

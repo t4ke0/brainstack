@@ -1,6 +1,5 @@
 package cmdhandler
 
-//TODO: introduce ncurses for your program
 import (
 	"bufio"
 	"fmt"
@@ -9,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"../cmdtools"
-	"../jsoncnt"
+	"github.com/TaKeO90/brainstack/cmdtools"
+	"github.com/TaKeO90/brainstack/jsoncnt"
 	"github.com/olekukonko/tablewriter"
 )
 
