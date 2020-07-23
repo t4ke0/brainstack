@@ -1,4 +1,4 @@
-package auxilary
+package auxiliary
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 const doneTaskFile string = "done.json"
 
 var (
-	//lock this variable give the user the premission to execute command after initializing the json file
+	//lock this variable give the user the permission to execute command after initializing the json file
 	lock = true
 
 	//Editable global variable indicate wheter a certain view is in edit mode or not
@@ -135,7 +135,7 @@ func showDoneTasks(v *gocui.View, pname string) {
 	}
 }
 
-// AUXILARY FUNCTIONS ///
+// AUXILIARY FUNCTIONS ///
 func formatInfo(v *gocui.View, info string, formatInf interface{}) {
 	v.Clear()
 	fmt.Fprintf(v, info, formatInf)

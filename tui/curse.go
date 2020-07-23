@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/TaKeO90/brainstack/tui/auxilary"
+	"github.com/TaKeO90/brainstack/tui/auxiliary"
 	"github.com/jroimartin/gocui"
 )
 
@@ -84,7 +84,7 @@ func createViews(g *gocui.Gui) (*gocui.View, *gocui.View, *gocui.View, *gocui.Vi
 
 func configViews(v *gocui.View, title string, x, y int, highlight bool, auto bool) {
 	if auto {
-		v.Editable = auxilary.Editable
+		v.Editable = auxiliary.Editable
 	} else {
 		v.Editable = false
 	}
@@ -106,7 +106,7 @@ func handleViews(g *gocui.Gui, filename string) {
 
 	_, err := g.SetCurrentView(cv.Name())
 	checkError(err)
-	auxilary.KeyBindingHandler(g, filename)
+	auxiliary.KeyBindingHandler(g, filename)
 }
 
 func main() {
