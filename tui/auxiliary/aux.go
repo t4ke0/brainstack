@@ -52,13 +52,8 @@ type Projects struct {
 	ProjectList []string
 }
 
-func removeView(views []*gocui.View, viewName string) []*gocui.View {
-	for i, v := range views {
-		if v.Name() == viewName {
-			return append(views[:i], views[i+1:]...)
-		}
-	}
-	return nil
+func removeView(views *[]*gocui.View, i int) {
+	*views = append((*views)[:i], (*views)[i+1:]...)
 }
 
 func saveDoneTasks(pName, dTask string) (bool, error) {
@@ -247,6 +242,64 @@ func parseCmd(rawCmd string) map[string]string {
 	return cmdMap
 }
 
+func initHandler(filename string, v *gocui.View) {
+	// When initializing then we need to set the lock to false
+	lock = false
+	//Read file here
+	err := jsoncnt.OpenJSONfile(filename, false, true)
+	if err != nil || err == io.EOF {
+		showInfo(v, "file is Empty you have no projects")
+	} else {
+		showInfo(v, `file initialized now you can interact with your data`)
+		CntList = jsoncnt.ShowJSONcnt()
+		err := getDoneTask()
+		if err != nil {
+			showInfo(v, "You have no Done tasks")
+		}
+	}
+}
+
+func saveHandler(filename string, v *gocui.View, g *gocui.Gui, vl string) {
+	if !lock {
+		var svD TaskDataSaver
+		var pjD ProjectDataSaver
+		if vl == "todos" {
+			tsk, _ := getNewData(g, "task")
+			svD = tsk
+			isInit, isTodo := svD.saveNewTasks()
+			if !isInit && !isTodo {
+				showInfo(v, `You should run 'init' command first or you didn't modify todo section`)
+			} else if !isInit && isTodo {
+				showInfo(v, `Really ? wanna save even tough you didn't modify todos`)
+			} else {
+				ok, err := jsoncnt.SavePT(filename, CntList)
+				if ok {
+					showInfo(v, "saved")
+				}
+				if err != nil {
+					showInfo(v, "failed to save")
+				}
+			}
+		} else if vl == "projects" {
+			_, pjct := getNewData(g, "project")
+			pjD = pjct
+			if ok := pjD.saveNewProjects(); ok {
+				isSaved, err := jsoncnt.SavePT(filename, CntList)
+				checkError(err)
+				if isSaved {
+					showInfo(v, "saved")
+				} else {
+					showInfo(v, "failed to save")
+				}
+			} else {
+				showInfo(v, "failed maybe that project already exist")
+			}
+		}
+	} else {
+		showInfo(v, "Should initialze the file first with `init` command")
+	}
+}
+
 //TODO: handle Done Command.
 //TODO: handle save without argument `saves content into file`.
 func commandHandler(g *gocui.Gui, cmd string, v *gocui.View, filename string) {
@@ -254,59 +307,9 @@ func commandHandler(g *gocui.Gui, cmd string, v *gocui.View, filename string) {
 	for k, vl := range m {
 		switch k {
 		case "init":
-			//if init then lock should be false
-			lock = false
-			//Read file here
-			err := jsoncnt.OpenJSONfile(filename, false, true)
-			if err != nil || err == io.EOF {
-				showInfo(v, "file is Empty you have no projects")
-			} else {
-				showInfo(v, `file initialized now you can interact with your data`)
-				CntList = jsoncnt.ShowJSONcnt()
-				err := getDoneTask()
-				if err != nil {
-					showInfo(v, "You have no Done tasks")
-				}
-			}
+			initHandler(filename, v)
 		case "save":
-			if !lock {
-				var svD TaskDataSaver
-				var pjD ProjectDataSaver
-				if vl == "todos" {
-					tsk, _ := getNewData(g, "task")
-					svD = tsk
-					isInit, isTodo := svD.saveNewTasks()
-					if !isInit && !isTodo {
-						showInfo(v, `You should run 'init' command first or you didn't modify todo section`)
-					} else if !isInit && isTodo {
-						showInfo(v, `Really ? wanna save even tough you didn't modify todos`)
-					} else {
-						ok, err := jsoncnt.SavePT(filename, CntList)
-						if ok {
-							showInfo(v, "saved")
-						}
-						if err != nil {
-							showInfo(v, "failed to save")
-						}
-					}
-				} else if vl == "projects" {
-					_, pjct := getNewData(g, "project")
-					pjD = pjct
-					if ok := pjD.saveNewProjects(); ok {
-						isSaved, err := jsoncnt.SavePT(filename, CntList)
-						checkError(err)
-						if isSaved {
-							showInfo(v, "saved")
-						} else {
-							showInfo(v, "failed to save")
-						}
-					} else {
-						showInfo(v, "failed maybe that project already exist")
-					}
-				}
-			} else {
-				showInfo(v, "Should initialze the file first with `init` command")
-			}
+			saveHandler(filename, v, g, vl)
 		case "project":
 			if !lock {
 				if LHighP != "" {
@@ -332,27 +335,210 @@ func printProjects(data jsoncnt.JSONlist, v *gocui.View) {
 	}
 }
 
-func orderViews(views []*gocui.View) []*gocui.View {
-	m := make(map[string]int)
-	for _, v := range views {
+func orderViews(views *[]*gocui.View) {
+	for i, v := range *views {
 		switch v.Name() {
 		case "cmd":
-			m[v.Name()] = 1
+			if i != 0 {
+				swap(i, 0, views)
+			}
 		case "list":
-			m[v.Name()] = 2
+			if i != 1 {
+				swap(i, 1, views)
+			}
 		case "todo":
-			m[v.Name()] = 3
+			if i != 2 {
+				swap(i, 2, views)
+			}
 		case "done":
-			m[v.Name()] = 4
+			if i != 3 {
+				swap(i, 3, views)
+			}
+		case "notif":
+			if i != 4 {
+				swap(i, 4, views)
+			}
 		}
 	}
-	for i, n := range views {
-		if i != m[n.Name()]-1 {
-			views[m[n.Name()]-1], views[i] = views[i], views[m[n.Name()]-1]
-		}
-	}
-	return views
 }
+
+func swap(i, j int, views *[]*gocui.View) {
+	(*views)[i], (*views)[j] = (*views)[j], (*views)[i]
+}
+
+// THIS IS THE FUNCTIONS WE GONNA USE WITH KEYBINDING
+
+func editToNormal(g *gocui.Gui, v *gocui.View) error {
+	nv, err := g.View("notif")
+	if err != nil {
+		return err
+	}
+	views := g.Views()
+	if Editable {
+		for _, v := range views {
+			if v.Name() != "notif" {
+				Editable = false
+				v.Editable = Editable
+				showInfo(nv, "Normal Mode")
+			}
+		}
+	}
+	return nil
+}
+
+func normalToEdit(g *gocui.Gui, v *gocui.View) error {
+	nv, err := g.View("notif")
+	if err != nil {
+		return err
+	}
+	view := g.Views()
+	if !Editable {
+		Editable = true
+		for _, v := range view {
+			if v.Name() != "notif" {
+				v.Editable = Editable
+				showInfo(nv, "edit mode")
+			}
+		}
+	}
+	return nil
+}
+
+func enterShowTodos(g *gocui.Gui, v *gocui.View) error {
+	lv, err := g.View("list")
+	if err != nil {
+		return err
+	}
+	tv, err := g.View("todo")
+	if err != nil {
+		return err
+	}
+	dv, err := g.View("done")
+	if err != nil {
+		return err
+	}
+	nv, err := g.View("notif")
+	if err != nil {
+		return err
+	}
+	_, cy := lv.Cursor()
+	vBuff := lv.BufferLines()
+	if len(vBuff) != 0 {
+		for i, j := range CntList {
+			for _, x := range vBuff {
+				if i == cy && j.Project == x {
+					LHighP = x
+					if LHighP != "" {
+						formatInfo(nv, "Current Project: %s", x)
+					}
+					dv.Clear()
+					showDoneTasks(dv, x)
+					tv.Clear()
+					for _, T := range strings.Split(j.Todos, ",") {
+						fmt.Fprintf(tv, "%s\n", strings.TrimSpace(T))
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func arrowUp(g *gocui.Gui, v *gocui.View) error {
+	vN := g.CurrentView()
+	Lines := vN.BufferLines()
+	if cx, cy := vN.Cursor(); cy != 0 {
+		cy--
+		err := vN.SetCursor(cx, cy)
+		if err != nil {
+			return err
+		}
+	} else if cy == 0 {
+		err := vN.SetCursor(cx, len(Lines)-1)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func arrowDown(g *gocui.Gui, v *gocui.View) error {
+	currentV := g.CurrentView()
+	cx, cy := currentV.Cursor()
+	cy++
+	Lines := currentV.BufferLines()
+	err := currentV.SetCursor(cx, cy)
+	if err != nil {
+		return err
+	}
+	if cy == len(Lines) {
+		err := currentV.SetCursor(cx, 0)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func tabHandler(g *gocui.Gui, v *gocui.View) error {
+	views := g.Views()
+	orderViews(&views)
+	removeView(&views, 4)
+	currentV := g.CurrentView()
+	for i, n := range views {
+		if currentV == n {
+			if i != len(views)-1 {
+				i++
+			} else {
+				i = 0
+			}
+			_, err := g.SetCurrentView(views[i].Name())
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func endKeyHandler(g *gocui.Gui, v *gocui.View) error {
+	currentV := g.CurrentView()
+	cBuff := currentV.Buffer()
+	cx, cy := currentV.Cursor()
+	if cBuff != "" {
+		word, err := currentV.Line(cy)
+		if err != nil {
+			return err
+		}
+		if cx != len(word)-1 && word != "" {
+			err := currentV.SetCursor(len(word)-1, cy)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func homeKeyHandler(g *gocui.Gui, v *gocui.View) error {
+	currentV := g.CurrentView()
+	cBuff := currentV.Buffer()
+	cx, cy := currentV.Cursor()
+	if cBuff != "" {
+		word, err := currentV.Line(cy)
+		if err != nil {
+			return err
+		}
+		if word != "" && cx != 0 {
+			if err := currentV.SetCursor(0, cy); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+/////////////////////////
 
 // KeyBindingHandler Handles Keybinding
 func KeyBindingHandler(g *gocui.Gui, filename string) {
@@ -371,157 +557,30 @@ func KeyBindingHandler(g *gocui.Gui, filename string) {
 	g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
 		return gocui.ErrQuit
 	})
+
 	// HANDLING CTRL+D FOR SWITCHING FROM EDIT MODE TO NORMAL MODE
-	g.SetKeybinding("", gocui.KeyCtrlD, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
-		views := g.Views()
-		if Editable {
-			for _, v := range views {
-				if v.Name() != "notif" {
-					Editable = false
-					v.Editable = Editable
-					showInfo(nv, "Normal Mode")
-				}
-			}
-		}
-		return nil
-	})
+	g.SetKeybinding("", gocui.KeyCtrlD, gocui.ModNone, editToNormal)
 
 	// HANDLING CTRL+O FOR SWITCHING FROM NORMAL MODE TO EDIT MODE
-	g.SetKeybinding("", gocui.KeyCtrlO, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
-		//currentV := g.CurrentView()
-		view := g.Views()
-		if !Editable {
-			Editable = true
-			for _, v := range view {
-				//				if v.Name() != "list" && v.Name() != "notif" {
-				if v.Name() != "notif" {
-					v.Editable = Editable
-					showInfo(nv, "edit mode")
-				}
-			}
-		}
-		return nil
-	})
+	g.SetKeybinding("", gocui.KeyCtrlO, gocui.ModNone, normalToEdit)
 
 	// HANDLING ENTER KEY FOR PROJECT VIEW TO SHOW TASKS IN `TODOS` VIEW
-	g.SetKeybinding(lv.Name(), gocui.KeyEnter, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
-		_, cy := lv.Cursor()
-		vBuff := lv.BufferLines()
-		if len(vBuff) != 0 {
-			for i, j := range CntList {
-				for _, x := range vBuff {
-					if i == cy && j.Project == x {
-						LHighP = x
-						if LHighP != "" {
-							formatInfo(nv, "Current Project: %s", x)
-						}
-						dv.Clear()
-						showDoneTasks(dv, x)
-						tv.Clear()
-						for _, T := range strings.Split(j.Todos, ",") {
-							fmt.Fprintf(tv, "%s\n", strings.TrimSpace(T))
-						}
-					}
-				}
-			}
-		}
-		return nil
-	})
-	// HANDLING UP ARROW FOR PROJECT VIEW
-	g.SetKeybinding(lv.Name(), gocui.KeyArrowUp, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
-		Lines := lv.BufferLines()
-		if cx, cy := lv.Cursor(); cy != 0 {
-			cy--
-			err := lv.SetCursor(cx, cy)
-			if err != nil {
-				return err
-			}
-		} else if cy == 0 {
-			err := lv.SetCursor(cx, len(Lines)-1)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	})
+	g.SetKeybinding(lv.Name(), gocui.KeyEnter, gocui.ModNone, enterShowTodos)
+
+	// HANDLING UP ARROW KEY
+	g.SetKeybinding("", gocui.KeyArrowUp, gocui.ModNone, arrowUp)
 
 	// HANDLING DOWN ARROW FOR PROJECT VIEW
-	g.SetKeybinding(lv.Name(), gocui.KeyArrowDown, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
-		cx, cy := lv.Cursor()
-		cy++
-		Lines := lv.BufferLines()
-		err := lv.SetCursor(cx, cy)
-		if err != nil {
-			return err
-		}
-		if cy == len(Lines) {
-			err := lv.SetCursor(cx, 0)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	})
+	g.SetKeybinding("", gocui.KeyArrowDown, gocui.ModNone, arrowDown)
 
 	// HANDLING TAB KEY FOR SWITCHING BETWEEN VIEWS EXCEPT NOTIF VIEW
-	g.SetKeybinding("", gocui.KeyTab, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
-		views := g.Views()
-		nviews := removeView(views, "notif") //NOTE: we can take a pointer of views then modifie them
-		nviews = orderViews(nviews)          //NOTE: also here we can take a pointer of views
-		currentV := g.CurrentView()
-		for i, n := range nviews {
-			if currentV == n {
-				if i != len(nviews)-1 {
-					i++
-				} else {
-					i = 0
-				}
-				_, err := g.SetCurrentView(nviews[i].Name())
-				if err != nil {
-					return err
-				}
-			}
-		}
-		return nil
-	})
+	g.SetKeybinding("", gocui.KeyTab, gocui.ModNone, tabHandler)
+
 	// HANDLING END KEY
-	g.SetKeybinding("", gocui.KeyEnd, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
-		currentV := g.CurrentView()
-		cBuff := currentV.Buffer()
-		cx, cy := currentV.Cursor()
-		if cBuff != "" {
-			word, err := currentV.Line(cy)
-			if err != nil {
-				return err
-			}
-			if cx != len(word)-1 && word != "" {
-				err := currentV.SetCursor(len(word)-1, cy)
-				if err != nil {
-					return err
-				}
-			}
-		}
-		return nil
-	})
+	g.SetKeybinding("", gocui.KeyEnd, gocui.ModNone, endKeyHandler)
 
 	// HANDLING HOME KEY
-	g.SetKeybinding("", gocui.KeyHome, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
-		currentV := g.CurrentView()
-		cBuff := currentV.Buffer()
-		cx, cy := currentV.Cursor()
-		if cBuff != "" {
-			word, err := currentV.Line(cy)
-			if err != nil {
-				return err
-			}
-			if word != "" && cx != 0 {
-				if err := currentV.SetCursor(0, cy); err != nil {
-					return err
-				}
-			}
-		}
-		return nil
-	})
+	g.SetKeybinding("", gocui.KeyHome, gocui.ModNone, homeKeyHandler)
 
 	// HANDLING DELETE KEY FOR COMMAND VIEW
 	g.SetKeybinding(cv.Name(), gocui.KeyDelete, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
@@ -536,15 +595,8 @@ func KeyBindingHandler(g *gocui.Gui, filename string) {
 	// HANDLING ENTER KEY FOR COMMAND VIEW FOR EXECUTING COMMANDS
 	g.SetKeybinding(cv.Name(), gocui.KeyEnter, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
 		if currentCmd := cv.Buffer(); currentCmd != "" {
-			//here we insert the command that we get from the view into the func that
-			//handles commands
 			commandHandler(g, strings.TrimSpace(currentCmd), nv, filename)
-			// HERE check if lv's buffer is not empty and compare it with
-			// a new buffer if it's available
-			//			res := compareBuffers(lv)
-			//			if len(lv.BufferLines()) == 0 || len(res) != 0 {
 			printProjects(CntList, lv)
-			//			}
 			cv.Clear()
 			err := cv.SetCursor(0, 0)
 			if err != nil {
@@ -557,17 +609,9 @@ func KeyBindingHandler(g *gocui.Gui, filename string) {
 	//	TASK AS DONE ONE AND SHOW THAT TASK ON DONE VIEW
 	g.SetKeybinding(tv.Name(), gocui.KeyEnter, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
 		//GET THE CURRENT PROJECT
-		_, ly := lv.Cursor()
-		cProj, err := lv.Line(ly)
-		if err != nil {
-			return err
-		}
-		_, ty := tv.Cursor()
+		_, cProj := getVData(lv.Name(), g, true)
 		//GET CURRENT HIGHLIGHTED TASK
-		cTask, err := tv.Line(ty)
-		if err != nil {
-			return err
-		}
+		_, cTask := getVData(tv.Name(), g, true)
 		ok, err := saveDoneTasks(cProj, cTask)
 		if err != nil {
 			return err
