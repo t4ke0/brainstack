@@ -151,7 +151,7 @@ func checkError(err error) {
 	}
 }
 
-//function to get views Data just provide view Name and gui then specify if do you need line value or the whole bufferLine
+//function to get views Data just provide view Name and gui then specify if  you need line value or the whole bufferLine
 func getVData(viewName string, g *gocui.Gui, line bool) ([]string, string) {
 	// in here we gonna grab all view Data as []string
 	if !line {
@@ -294,6 +294,12 @@ func saveHandler(filename string, v *gocui.View, g *gocui.Gui, vl string) {
 			} else {
 				showInfo(v, "failed maybe that project already exist")
 			}
+		} else if vl == "donetask" {
+			isSaved, err := jsoncnt.SaveDoneTasks(doneTaskFile, DoneList)
+			checkError(err)
+			if isSaved {
+				showInfo(v, "done tasks has been saved")
+			}
 		}
 	} else {
 		showInfo(v, "Should initialze the file first with `init` command")
@@ -301,7 +307,6 @@ func saveHandler(filename string, v *gocui.View, g *gocui.Gui, vl string) {
 }
 
 //TODO: handle Done Command.
-//TODO: handle save without argument `saves content into file`.
 func commandHandler(g *gocui.Gui, cmd string, v *gocui.View, filename string) {
 	m := parseCmd(cmd)
 	for k, vl := range m {
@@ -320,8 +325,42 @@ func commandHandler(g *gocui.Gui, cmd string, v *gocui.View, filename string) {
 			} else {
 				showInfo(v, "Should initialze the file first with `init` command")
 			}
+		case "recover":
+			if !lock {
+				if recT := strings.TrimSpace(vl); recT != "" {
+					recvT, isRec := recoverDone(g, recT)
+					if isRec {
+						formatInfo(v, "%s: task has been recovered", recvT)
+						err := enterShowTodos(g, v)
+						checkError(err)
+					} else {
+						showInfo(v, "Failed to recover the task")
+					}
+				}
+			}
+		case "set":
+			if !lock {
+				setValuesHandler(vl, v)
+			}
 		default:
 			showInfo(v, "command not found")
+		}
+	}
+}
+
+// This Function helps to get the element and it value to set
+func setValuesHandler(vl string, notifV *gocui.View) {
+	if vl != "" {
+		element, value := strings.Fields(vl)[0], strings.Join(strings.Fields(vl)[1:], " ")
+		switch element {
+		case "project":
+			if value != "" {
+				if ok := setCurrentProject(value); ok {
+					formatInfo(notifV, "Current Project : %s", value)
+				} else {
+					showInfo(notifV, "Failed to set Project, or project you are trying to set doesn't exist")
+				}
+			}
 		}
 	}
 }
@@ -538,6 +577,49 @@ func homeKeyHandler(g *gocui.Gui, v *gocui.View) error {
 	return nil
 }
 
+func setCurrentProject(projectName string) bool {
+	//TODO: check if that project exist or not cause we cant set a project that is not exist
+	if LHighP != "" {
+		for _, n := range CntList {
+			if n.Project == projectName {
+				LHighP = projectName
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func recoverDone(g *gocui.Gui, taskName string) (string, bool) {
+	var recoverTask string
+	var ok bool
+	if taskName != "" {
+		recoverTask = taskName
+	} else {
+		_, recP := getVData("done", g, true)
+		recoverTask = recP
+	}
+
+	for i, n := range DoneList {
+		if n.ProjectName == LHighP {
+			nDone := strings.Replace(strings.Join(n.Task, ""), recoverTask, "", 1)
+			n.Task = strings.Split(nDone, "")
+			DoneList[i] = n
+			ok = true
+		}
+	}
+	for i, j := range CntList {
+		if j.Project == LHighP {
+			nTask := strings.Split(j.Todos, "")
+			nTask = append(nTask, recoverTask)
+			j.Todos = strings.Join(nTask, "")
+			CntList[i] = j
+			ok = true
+		}
+	}
+	return recoverTask, ok
+}
+
 /////////////////////////
 
 // KeyBindingHandler Handles Keybinding
@@ -592,6 +674,20 @@ func KeyBindingHandler(g *gocui.Gui, filename string) {
 		return nil
 	})
 
+	//HANDLING CTRL+R IN DONE TASK VIEW TO RECOVER A DONE TASK
+	g.SetKeybinding(dv.Name(), gocui.KeyCtrlR, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
+		if recT, isRecovered := recoverDone(g, ""); isRecovered {
+			formatInfo(nv, "%s:  task recovered\n", recT)
+			err := enterShowTodos(g, v)
+			if err != nil {
+				return err
+			}
+		} else {
+			showInfo(nv, "Failed To restore the task")
+		}
+		return nil
+	})
+
 	// HANDLING ENTER KEY FOR COMMAND VIEW FOR EXECUTING COMMANDS
 	g.SetKeybinding(cv.Name(), gocui.KeyEnter, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
 		if currentCmd := cv.Buffer(); currentCmd != "" {
@@ -617,8 +713,11 @@ func KeyBindingHandler(g *gocui.Gui, filename string) {
 			return err
 		}
 		if ok {
-			dv.Clear()
-			showDoneTasks(dv, cProj)
+			//			dv.Clear()
+			//			showDoneTasks(dv, cProj)
+			if err := enterShowTodos(g, v); err != nil {
+				return err
+			}
 		} else {
 			showInfo(nv, "Failed to add that task to the Done tasks list")
 		}
