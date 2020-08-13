@@ -152,19 +152,19 @@ func checkError(err error) {
 }
 
 //function to get views Data just provide view Name and gui then specify if  you need line value or the whole bufferLine
-func getVData(viewName string, g *gocui.Gui, line bool) ([]string, string) {
+func getVData(viewName string, g *gocui.Gui, line bool) ([]string, string, int) {
 	// in here we gonna grab all view Data as []string
 	if !line {
 		v, err := g.View(viewName)
 		checkError(err)
-		return v.BufferLines(), ""
+		return v.BufferLines(), "", 0
 	}
 	v, err := g.View(viewName)
 	checkError(err)
 	_, cy := v.Cursor()
 	val, err := v.Line(cy)
 	checkError(err)
-	return []string{}, val
+	return []string{}, val, cy
 }
 
 // getNewData get Data from views in function of Vctg
@@ -176,8 +176,8 @@ func getNewData(g *gocui.Gui, Vctg string) (*Tasks, *Projects) {
 		return nil, nil
 	}
 	if Vctg == "task" {
-		todos, _ := getVData("todo", g, false)
-		_, currentP := getVData("list", g, true)
+		todos, _, _ := getVData("todo", g, false)
+		_, currentP, _ := getVData("list", g, true)
 		if currentP != "" && currentP != LHighP || len(todos) != 0 {
 			data = &Tasks{LHighP, todos}
 		} else {
@@ -185,7 +185,7 @@ func getNewData(g *gocui.Gui, Vctg string) (*Tasks, *Projects) {
 		}
 		return data, nil
 	} else if Vctg == "project" {
-		projects, _ := getVData("list", g, false)
+		projects, _, _ := getVData("list", g, false)
 		pdata = &Projects{projects}
 		return nil, pdata
 	} else {
@@ -205,7 +205,7 @@ func (vd *Tasks) saveNewTasks() (bool, bool) {
 				}
 			}
 		}
-		return true, true //NOTE: modified was (true, false)
+		return true, false //NOTE: modified was (true, false)
 	}
 	return false, false
 }
@@ -295,6 +295,16 @@ func saveHandler(filename string, v *gocui.View, g *gocui.Gui, vl string) {
 				showInfo(v, "failed maybe that project already exist")
 			}
 		} else if vl == "donetask" {
+			// MAYBE WE NEED TO GET DONELIST ELEMENT AND UPDATE DONELIST THEN SAVE
+			// WE ASSUME THAT THE HIGHLIGHTED PROJECT IS LHighP VARIABLE
+			// SO ITS THE CURRENT PROJECT
+			doneL, _, _ := getVData("done", g, false)
+			for i, p := range DoneList {
+				if p.ProjectName == LHighP {
+					p.Task = doneL
+					DoneList[i] = p
+				}
+			}
 			isSaved, err := jsoncnt.SaveDoneTasks(doneTaskFile, DoneList)
 			checkError(err)
 			if isSaved {
@@ -342,11 +352,77 @@ func commandHandler(g *gocui.Gui, cmd string, v *gocui.View, filename string) {
 			if !lock {
 				setValuesHandler(vl, v)
 			}
+		case "done":
+			if !lock {
+				if vl == "fifo" || vl == "lifo" {
+					setValuesHandler(vl, v)
+				} else {
+					ok, err := saveDoneTasks(LHighP, strings.TrimSpace(vl))
+					checkError(err)
+					if ok {
+						formatInfo(v, "Done with this task %s", vl)
+					} else {
+						showInfo(v, "Failed To remove the task")
+					}
+				}
+			}
 		default:
 			showInfo(v, "command not found")
 		}
 	}
 }
+
+// SOME FUNCTIONS FROM JSONCNT THAT ARE MISS CODED
+// I'M GONNA REWRITE THEM HERE
+//NOTE we shall add the done task into donetask list
+func DONELIFO(pname string) (ok bool) {
+	if pname == "" {
+		pname = LHighP
+	}
+	if len(CntList) != 0 {
+		for _, n := range CntList {
+			if n.Project == pname {
+				splitTodo := strings.Split(n.Todos, ",")
+				if len(splitTodo) > 1 {
+					removedTask := splitTodo[len(splitTodo)-1]
+					saved, err := saveDoneTasks(n.Project, removedTask)
+					checkError(err)
+					if saved {
+						ok = true
+					}
+				}
+			}
+		}
+	} else {
+		ok = false
+	}
+	return
+}
+
+//NOTE we shall add the done task into donetask list
+func DONEFIFO(pname string) (ok bool) {
+	if pname == "" {
+		pname = LHighP
+	}
+	if len(CntList) != 0 {
+		for _, n := range CntList {
+			if n.Project == pname {
+				if splitTodo := strings.Split(n.Todos, ","); len(splitTodo) >= 1 {
+					saved, err := saveDoneTasks(n.Project, splitTodo[0])
+					checkError(err)
+					if saved {
+						ok = true
+					}
+				}
+			}
+		}
+	} else {
+		ok = false
+	}
+	return
+}
+
+////////////////////////////////////////////////
 
 // This Function helps to get the element and it value to set
 func setValuesHandler(vl string, notifV *gocui.View) {
@@ -360,6 +436,18 @@ func setValuesHandler(vl string, notifV *gocui.View) {
 				} else {
 					showInfo(notifV, "Failed to set Project, or project you are trying to set doesn't exist")
 				}
+			}
+		case "fifo":
+			if done := DONEFIFO(value); done {
+				formatInfo(notifV, "You are Done with This Task %s", value)
+			} else {
+				showInfo(notifV, "Failed to remove the task")
+			}
+		case "lifo":
+			if done := DONELIFO(value); done {
+				formatInfo(notifV, "You are Done with This Task %s", value)
+			} else {
+				showInfo(notifV, "Failed to remove the task")
 			}
 		}
 	}
@@ -591,33 +679,43 @@ func setCurrentProject(projectName string) bool {
 }
 
 func recoverDone(g *gocui.Gui, taskName string) (string, bool) {
-	var recoverTask string
-	var ok bool
+	var (
+		recoverTask string
+		ok          bool
+		index       int
+	)
 	if taskName != "" {
 		recoverTask = taskName
 	} else {
-		_, recP := getVData("done", g, true)
+		_, recP, cy := getVData("done", g, true)
 		recoverTask = recP
+		index = cy
 	}
 
 	for i, n := range DoneList {
 		if n.ProjectName == LHighP {
-			nDone := strings.Replace(strings.Join(n.Task, ""), recoverTask, "", 1)
-			n.Task = strings.Split(nDone, "")
+			removeFromList(index, &n.Task) //NOTE: not sure if the index is correct
+			//nDone := strings.Replace(strings.Join(n.Task, ""), recoverTask, "", 1)
+			//n.Task = strings.Split(nDone, "")
 			DoneList[i] = n
-			ok = true
 		}
 	}
 	for i, j := range CntList {
 		if j.Project == LHighP {
-			nTask := strings.Split(j.Todos, "")
+			nTask := strings.Split(j.Todos, ",")
 			nTask = append(nTask, recoverTask)
-			j.Todos = strings.Join(nTask, "")
+			j.Todos = strings.Join(nTask, ",")
 			CntList[i] = j
 			ok = true
 		}
 	}
 	return recoverTask, ok
+}
+
+func removeFromList(index int, rmvL *[]string) {
+	if len(*rmvL) != 0 {
+		*rmvL = append((*rmvL)[:index], (*rmvL)[index+1:]...)
+	}
 }
 
 /////////////////////////
@@ -705,9 +803,9 @@ func KeyBindingHandler(g *gocui.Gui, filename string) {
 	//	TASK AS DONE ONE AND SHOW THAT TASK ON DONE VIEW
 	g.SetKeybinding(tv.Name(), gocui.KeyEnter, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
 		//GET THE CURRENT PROJECT
-		_, cProj := getVData(lv.Name(), g, true)
+		_, cProj, _ := getVData(lv.Name(), g, true)
 		//GET CURRENT HIGHLIGHTED TASK
-		_, cTask := getVData(tv.Name(), g, true)
+		_, cTask, _ := getVData(tv.Name(), g, true)
 		ok, err := saveDoneTasks(cProj, cTask)
 		if err != nil {
 			return err
