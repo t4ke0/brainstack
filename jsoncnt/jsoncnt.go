@@ -194,27 +194,23 @@ func SaveCnt(filename string) (bool, error) {
 }
 
 //LIFO last in first out
-func LIFO(projectName string) bool {
-	nlist := JSONlist{}
+func LIFO(projectName string) (ok bool) {
 	if len(list) == 0 || projectName == "" {
-		return false
+		ok = false
 	}
-	for _, i := range list {
+	for n, i := range list {
 		if i.Project == projectName {
 			stodo := strings.Split(i.Todos, " ")
 			if len(stodo) > 1 {
 				ntodo := strings.Split(i.Todos, ",")
 				ntodo = ntodo[:len(ntodo)-1]
 				i.Todos = strings.Join(ntodo, "")
-				nlist = append(nlist, i)
+				list[n] = i
+				ok = true
 			}
-		} else {
-			nlist = append(nlist, i)
-			continue
 		}
 	}
-	list = nlist
-	return true
+	return
 }
 
 //AddTodo add Todo to a particular project
